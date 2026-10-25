@@ -18,6 +18,16 @@ define $(PKG)_BUILD
     $(MAKE) -C '$(1)' -j '$(JOBS)' install
 endef
 
+# The native library is static too, but host shared libraries link it (e.g.
+# Qt modules that use Qt::NetworkPrivate, whose headers include zlib.h), so
+# it has to be position independent.
+define $(PKG)_BUILD_$(BUILD)
+    cd '$(1)' && CHOST='$(TARGET)' CFLAGS='-O3 -fPIC' ./configure \
+        --prefix='$(PREFIX)/$(TARGET)' \
+        --static
+    $(MAKE) -C '$(1)' -j '$(JOBS)' install
+endef
+
 define $(PKG)_BUILD_SHARED
     $(MAKE) -C '$(1)' -f win32/Makefile.gcc \
         SHARED_MODE=1 \
