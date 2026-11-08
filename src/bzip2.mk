@@ -9,6 +9,8 @@ $(PKG)_SUBDIR   := bzip2-$($(PKG)_VERSION)
 $(PKG)_FILE     := bzip2-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := https://sourceware.org/pub/bzip2/$($(PKG)_FILE)
 $(PKG)_DEPS     := cc
+$(PKG)_TARGETS  := $(BUILD) $(MXE_TARGETS)
+$(PKG)_DEPS_$(BUILD) :=
 
 define $(PKG)_UPDATE
     $(WGET) -q -O- 'https://sourceware.org/pub/bzip2/' | \
@@ -38,4 +40,15 @@ define $(PKG)_BUILD_SHARED
     '$(TARGET)-gcc' '$(1)'/*.o -shared \
         -o '$(PREFIX)/$(TARGET)/bin/libbz2.dll' -Xlinker \
         --out-implib -Xlinker '$(PREFIX)/$(TARGET)/lib/libbz2.dll.a'
+endef
+
+# static and position independent, so host shared libraries can link it
+define $(PKG)_BUILD_$(BUILD)
+    $(MAKE) -C '$(1)' -j '$(JOBS)' libbz2.a \
+        CC='$(BUILD_CC)' \
+        CFLAGS='-O2 -fPIC -D_FILE_OFFSET_BITS=64'
+    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib'
+    $(INSTALL) -d '$(PREFIX)/$(TARGET)/include'
+    $(INSTALL) -m644 '$(1)/bzlib.h' '$(PREFIX)/$(TARGET)/include/'
+    $(INSTALL) -m644 '$(1)/libbz2.a' '$(PREFIX)/$(TARGET)/lib/'
 endef
